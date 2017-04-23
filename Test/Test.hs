@@ -352,6 +352,24 @@ testRestrict = it "restricts the rows returned" $ query `queryShouldReturnSorted
           O.restrict -< fst t .== 1
           Arr.returnA -< t
 
+testExists :: Test
+testExists = it "restricts the rows returned with EXISTS" $ query `queryShouldReturnSorted` filter ((== 1) . fst) (L.sort table1data)
+  where query = proc () -> do
+          t <- table1Q -< ()
+          () <- O.exists (proc t -> do
+                            t' <- table1Q -< ()
+                            O.restrict -< fst t' .> fst t) -< t
+          Arr.returnA -< t
+
+testNotExists :: Test
+testNotExists = it "restricts the rows returned with NOT EXISTS" $ query `queryShouldReturnSorted` filter ((== 2) . fst)  (L.sort table1data)
+  where query = proc () -> do
+          t <- table1Q -< ()
+          () <- O.notExists (proc t -> do
+                               t' <- table1Q -< ()
+                               O.restrict -< fst t' .> fst t) -< t
+          Arr.returnA -< t
+
 testIn :: Test
 testIn = it "restricts values to a range" $ query `queryShouldReturnSorted` filter (flip elem [100, 200] . snd) (L.sort table1data)
   where query = proc () -> do
@@ -513,6 +531,15 @@ testOrderBy2 = it "" $ queryShouldReturnSortBy (O.desc fst <> O.asc snd)
 testOrderBySame :: Test
 testOrderBySame = it "" $ queryShouldReturnSortBy (O.desc fst <> O.asc fst)
                                (flip (Ord.comparing fst) <> Ord.comparing fst)
+
+testOrderExact :: Test
+testOrderExact = it "" $ testH (O.orderBy (O.exact cols snd) table1Q) (result `shouldBe`)
+  where cols   = map O.constant [300,200::Int]
+        result = [ (2::Int, 300::Int)
+                 , (1, 200)
+                 , (1, 100)
+                 , (1, 100)
+                 ]
 
 limitOrderShouldMatch :: (Query (Column O.PGInt4, Column O.PGInt4) -> Query (Column O.PGInt4, Column O.PGInt4))
            -> ([(Int, Int)] -> [(Int, Int)]) -> (PGS.Connection -> Expectation)
@@ -941,6 +968,8 @@ main = do
         testSelect
         testProduct
         testRestrict
+        testExists
+        testNotExists
         testIn
         testNum
         testDiv
@@ -965,6 +994,7 @@ main = do
         testOrderBy
         testOrderBy2
         testOrderBySame
+        testOrderExact
       describe "count" $ do
         testCountRows0
         testCountRows3
