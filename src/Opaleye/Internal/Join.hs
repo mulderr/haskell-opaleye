@@ -34,7 +34,8 @@ joinExplicit :: U.Unpackspec columnsA columnsA
              -> (columnsA -> returnedColumnsA)
              -> (columnsB -> returnedColumnsB)
              -> PQ.JoinType
-             -> Q.Query columnsA -> Q.Query columnsB
+             -> Q.Query columnsA
+             -> Q.Query columnsB
              -> ((columnsA, columnsB) -> Column T.PGBool)
              -> Q.Query (returnedColumnsA, returnedColumnsB)
 joinExplicit uA uB returnColumnsA returnColumnsB joinType

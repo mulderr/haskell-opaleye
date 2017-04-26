@@ -22,14 +22,16 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Opaleye.Join where
 
+import           Opaleye.Internal.Column (Column(Column))
 import qualified Opaleye.Internal.Unpackspec as U
 import qualified Opaleye.Internal.Join as J
+import qualified Opaleye.Internal.PackMap as PM
 import qualified Opaleye.Internal.PrimQuery as PQ
-import           Opaleye.QueryArr (Query)
-import           Opaleye.Internal.Column (Column)
+import           Opaleye.Internal.QueryArr (Query, QueryArr(..))
 import qualified Opaleye.PGTypes as T
 
 import qualified Data.Profunctor.Product.Default as D
@@ -44,6 +46,15 @@ leftJoin  :: (D.Default U.Unpackspec columnsL columnsL,
           -> ((columnsL, columnsR) -> Column T.PGBool) -- ^ Condition on which to join
           -> Query (columnsL, nullableColumnsR) -- ^ Left join
 leftJoin = leftJoinExplicit D.def D.def D.def
+
+
+-- | Alternate version of 'leftJoin'.
+leftJoinA :: (D.Default U.Unpackspec a a,
+              D.Default J.NullMaker a nullableA)
+          => Query a -- ^ Right query
+          -> QueryArr (a -> Column T.PGBool) nullableA -- ^ Left join acepting condition as an argument
+leftJoinA = leftJoinAExplicit D.def D.def
+
 
 rightJoin  :: (D.Default U.Unpackspec columnsL columnsL,
                D.Default U.Unpackspec columnsR columnsR,
@@ -75,6 +86,30 @@ leftJoinExplicit :: U.Unpackspec columnsL columnsL
                  -> Query (columnsL, nullableColumnsR)
 leftJoinExplicit uA uB nullmaker =
   J.joinExplicit uA uB id (J.toNullable nullmaker) PQ.LeftJoin
+
+
+leftJoinAExplicit :: U.Unpackspec a a
+                  -> J.NullMaker a nullableA
+                  -> Query a
+                  -> QueryArr (a -> Column T.PGBool) nullableA
+leftJoinAExplicit uA nullmaker rq =
+  QueryArr $ \(p, left, t) ->
+    let QueryArr rightQueryF = rq
+        (right, pqR, t') = rightQueryF ((), PQ.Unit, t)
+        (renamed, ljPEsB) = PM.run $ U.runUnpackspec uA (J.extractLeftJoinFields 2 t') right
+        renamedNullable = J.toNullable nullmaker renamed
+        Column cond = p renamed
+    in ( renamedNullable
+       , PQ.Join
+           PQ.LeftJoin
+           cond
+           [] -- TODO ?
+           ljPEsB
+           left
+           pqR
+       , t'
+       )
+
 
 rightJoinExplicit :: U.Unpackspec columnsL columnsL
                   -> U.Unpackspec columnsR columnsR

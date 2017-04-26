@@ -75,7 +75,7 @@ instance Functor (QueryRunnerColumn u) where
 
 -- | A 'QueryRunner' specifies how to convert Postgres values (@columns@)
 --   into Haskell values (@haskells@).  Most likely you will never need
---   to create on of these or handle one directly.  It will be provided
+--   to create one of these or handle one directly.  It will be provided
 --   for you by the 'D.Default' 'QueryRunner' instance.
 data QueryRunner columns haskells =
   QueryRunner (U.Unpackspec columns ())

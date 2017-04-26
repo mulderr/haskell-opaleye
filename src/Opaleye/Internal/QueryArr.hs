@@ -31,8 +31,10 @@ type Query = QueryArr ()
 
 simpleQueryArr :: ((a, Tag) -> (b, PQ.PrimQuery, Tag)) -> QueryArr a b
 simpleQueryArr f = QueryArr g
-  where g (a0, primQuery, t0) = (a1, PQ.times primQuery primQuery', t1)
-          where (a1, primQuery', t1) = f (a0, t0)
+  where
+    g (a0, primQuery, t0) = let (a1, primQuery', t1) = f (a0, t0)
+                            in (a1, PQ.times primQuery primQuery', t1)
+
 
 runQueryArr :: QueryArr a b -> (a, PQ.PrimQuery, Tag) -> (b, PQ.PrimQuery, Tag)
 runQueryArr (QueryArr f) = f
@@ -59,8 +61,9 @@ instance C.Category QueryArr where
 instance Arr.Arrow QueryArr where
   arr f   = QueryArr (first3 f)
   first f = QueryArr g
-    where g ((b, d), primQ, t0) = ((c, d), primQ', t1)
-            where (c, primQ', t1) = runQueryArr f (b, primQ, t0)
+    where
+      g ((b, d), primQ, t0) = let (c, primQ', t1) = runQueryArr f (b, primQ, t0)
+                              in ((c, d), primQ', t1)
 
 instance Functor (QueryArr a) where
   fmap f = (arr f <<<)
