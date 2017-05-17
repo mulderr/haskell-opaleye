@@ -169,6 +169,10 @@ upper = C.unOp HPQ.OpUpper
 like :: Column T.PGText -> Column T.PGText -> Column T.PGBool
 like = C.binOp HPQ.OpLike
 
+-- | Postgres trim
+trim :: Column T.PGText -> Column T.PGText
+trim = C.unOp (HPQ.UnOpOther "trim")
+
 -- | Postgres @ILIKE@ operator
 ilike :: Column T.PGText -> Column T.PGText -> Column T.PGBool
 ilike = C.binOp HPQ.OpILike
