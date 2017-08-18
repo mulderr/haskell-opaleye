@@ -32,6 +32,7 @@ import qualified Opaleye.Internal.Join as J
 import qualified Opaleye.Internal.PackMap as PM
 import qualified Opaleye.Internal.PrimQuery as PQ
 import           Opaleye.Internal.QueryArr (Query, QueryArr(..))
+import           Opaleye.Internal.Tag (next)
 import qualified Opaleye.PGTypes as T
 
 import qualified Data.Profunctor.Product.Default as D
@@ -107,7 +108,7 @@ leftJoinAExplicit uA nullmaker rq =
            ljPEsB
            left
            pqR
-       , t'
+       , next t'
        )
 
 
